@@ -58,3 +58,5 @@ $route['posts/add'] = 'posts/add';
 $route['posts/edit/(:num)'] = 'posts/edit/$1';
 $route['posts/delete/(:num)'] = 'posts/delete/$1';
 $route['posts'] = 'posts';
+$route['posts/import'] = 'posts/import';
+$route['posts/export'] = 'posts/exportData';

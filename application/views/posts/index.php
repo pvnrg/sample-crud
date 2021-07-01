@@ -12,7 +12,13 @@
     <div class="row">
         <div class="col-xs-12">
             <div class="panel panel-default ">
-                <div class="panel-heading">Posts <a href="<?php echo site_url('posts/add/'); ?>" class="glyphicon glyphicon-plus pull-right" ></a></div>
+                <div class="panel-heading">
+                    Posts 
+                    
+                    <a href="<?php echo site_url('posts/export/'); ?>" name="import_csv" class="btn btn-primary btn-xs pull-right mr-4"><i class="fa fa-download"></i>Export</a>
+                    <a href="<?php echo site_url('posts/import/'); ?>" name="import_csv" id="import_csv" class="btn btn-success btn-xs pull-right mr-4"> <i class="fa fa-upload" aria-hidden="true"></i> Import</a>
+                    <a href="<?php echo site_url('posts/add/'); ?>" name="import_csv" class="btn btn-default btn-xs pull-right mr-4"> <i class="fa fa-plus" aria-hidden="true"></i> Add New</a>
+                </div>
                 <table class="table table-striped">
                     <thead>
                         <tr>

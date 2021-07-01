@@ -7,6 +7,10 @@ class Posts extends CI_Controller {
         $this->load->helper('form');
         $this->load->library('form_validation');
         $this->load->model('post');
+        // load CSV library
+        $this->load->library('CSVReader');
+        // Load file helper
+        $this->load->helper('file');
     }
     
     public function index(){
@@ -151,11 +155,126 @@ class Posts extends CI_Controller {
             
             if($delete){
                 $this->session->set_userdata('success_msg', 'Post has been removed successfully.');
-            }else{
+            } else {
                 $this->session->set_userdata('error_msg', 'Some problems occurred, please try again.');
             }
         }
 
         redirect('/posts');
     }
+
+    /*
+     * import posts
+     */
+    public function import() {
+        $postData = array();
+        
+        $data['post'] = $postData;
+        $data['title'] = 'Import Posts';
+        $data['action'] = 'Import';
+
+        //load the add page view
+        $this->load->view('templates/header', $data);
+        $this->load->view('posts/import', $data);
+        $this->load->view('templates/footer');
+    }
+
+    /*
+     * Save posts
+     */
+    public function save() {
+        $this->form_validation->set_rules('fileURL', 'Upload File', 'callback_checkFileValidation');
+        if($this->form_validation->run() == false) {
+            $this->session->set_userdata('error_msg', 'Some problems occurred, please try again.');
+            redirect('posts/import');
+        } else {
+           // If file uploaded
+           if(is_uploaded_file($_FILES['fileURL']['tmp_name'])) {                            
+               // Parse data from CSV file
+               $csvData = $this->csvreader->parse_csv($_FILES['fileURL']['tmp_name']);            
+               // create array from CSV file
+               if(!empty($csvData)){
+                   foreach($csvData as $element){                    
+                       // Prepare data for DB insertion
+                       $data[] = array(
+                           'title' => $element['Title'],
+                           'content' => $element['Content'],
+                       );
+                   }
+               }
+           }
+
+           // insert/update data into database
+           foreach($data as $element) {
+                $newData = array(
+                    'title' => $element['title'],
+                    'content' => $element['content']
+                );
+                $this->post->insert($newData);
+           }
+           $this->session->set_userdata('success_msg', 'Ports Import successfully.');
+           redirect('/posts');
+        }              
+    }
+
+    /*
+     * Check file validation
+     */
+    public function checkFileValidation($str) {
+        $mime_types = array(
+            'text/csv',
+            'text/x-csv', 
+            'application/csv', 
+            'application/x-csv', 
+            'application/excel',
+            'text/x-comma-separated-values', 
+            'text/comma-separated-values', 
+            'application/octet-stream', 
+            'application/vnd.ms-excel',
+            'application/vnd.msexcel', 
+            'text/plain',
+        );
+        if(isset($_FILES['fileURL']['name']) && $_FILES['fileURL']['name'] != ""){
+            // get mime by extension
+            $mime = get_mime_by_extension($_FILES['fileURL']['name']);
+            $fileExt = explode('.', $_FILES['fileURL']['name']);
+            $ext = end($fileExt);
+            if(($ext == 'csv') && in_array($mime, $mime_types)){
+                return true;
+            } else {
+                $this->form_validation->set_message('checkFileValidation', 'Please choose correct file.');
+                return false;
+            }
+        } else {
+            $this->form_validation->set_message('checkFileValidation', 'Please choose a file.');
+            return false;
+        }
+    }
+
+    /*
+     * Export data
+     */
+    public function exportData() {
+        $storData = array();
+        $metaData[] = array('title' => 'Title', 'content' => 'Content');
+        $posts = $this->post->getRows(); 
+        foreach($posts as $key=>$element) {
+            $storData[] = array(
+                'Title' => $element['title'],
+                'Content' => $element['content'],
+            );
+        }
+        $data = array_merge($metaData,$storData);
+        header("Content-type: application/csv");
+        header("Content-Disposition: attachment; filename=\"csv-sample-posts".".csv\"");
+        header("Pragma: no-cache");
+        header("Expires: 0");
+        $handle = fopen('php://output', 'w');
+        foreach ($data as $data) {
+            fputcsv($handle, $data);
+        }
+            fclose($handle);
+        exit;
+    }
+
 }
